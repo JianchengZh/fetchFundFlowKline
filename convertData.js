@@ -5,7 +5,8 @@ var _ = require('underscore');
 var http = require('./httpTool');
 var fs = require("fs");
 var ids = require('./allIds').ids;
-var redis = require('redis').createClient(6390, '172.16.33.203');
+// var redis = require('redis').createClient(6390, '172.16.33.203');
+var REDIS = null;
 var json = {};
 var KUNIT = null;
 for(var i in ids) {
@@ -13,6 +14,8 @@ for(var i in ids) {
 }
 
 process.on('message', function(task) {
+	var redis = task.redis;
+	REDIS = require('redis').createClient(redis.split(':')[1], redis.split(':')[0]);
 	start(task.array);
 });
 
@@ -402,14 +405,14 @@ var Worker = function(type, key) {
  */
 var pushData = function(key, str, callback) {
 		// console.log('pid:'+process.pid+','+key);
-		redis.ltrim(key, -120, -1, function(ee, rr) {
-			if(!ee) {
-				redis.rpush(key, str, function(err, res) {
+		//redis.ltrim(key, -120, -1, function(ee, rr) {
+			//if(!ee) {
+				REDIS.rpush(key, str, function(err, res) {
 					if(err) console.log(err);
 					if(callback) callback();
 				});
-			}
-		});
+			//}
+		//});
 	};
 
 var saveKLine = function(results, key, cb) {
