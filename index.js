@@ -40,8 +40,9 @@ var process_load_f = function(keys) {
     var length = keys.length;
     var threads = length < THREADS ? length : THREADS;
     var index = parseInt(length / threads);
-    for(var i = 0; i < threads; i++) {
-      var temp = keys.slice(index * i, index * (i + 1));
+    for(var i = 0; i < threads+1; i++) {
+      var count = (i==threads-1)?(length>=(index * (i + 1))?(index * (i + 1)):length):(index * (i + 1));
+      var temp = keys.slice(index * i, count);
       process_load_deal(temp);
     }
   }
@@ -72,8 +73,9 @@ var process_f = function(keys) {
     var length = keys.length;
     var threads = length < THREADS ? length : THREADS;
     var index = parseInt(length / threads);
-    for(var i = 0; i < threads; i++) {
-      var temp = keys.slice(index * i, index * (i + 1));
+    for(var i = 0; i < threads+1; i++) {
+      var count = (i==threads-1)?(length>=(index * (i + 1))?(index * (i + 1)):length):(index * (i + 1));
+      var temp = keys.slice(index * i, count);
       process_deal(temp);
     }
   }
@@ -121,8 +123,9 @@ var process_trim_f = function(keys) {
     var length = keys.length;
     var threads = length < THREADS ? length : THREADS;
     var index = parseInt(length / threads);
-    for(var i = 0; i < threads; i++) {
-      var temp = keys.slice(index * i, index * (i + 1));
+    for(var i = 0; i < threads+1; i++) {
+      var count = (i==threads-1)?(length>=(index * (i + 1))?(index * (i + 1)):length):(index * (i + 1));
+      var temp = keys.slice(index * i, count);
       process_trim_deal(temp);
     }
   }

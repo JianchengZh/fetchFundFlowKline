@@ -103,6 +103,10 @@ var dealYearKline = function(results, key) {
 			} catch(e) {
 				console.log(e.stack);
 			}
+			var now_date = new Date().format('yyyyMMdd');
+			if(parseFloat(now_date)<parseFloat(TIME)){
+				TIME = now_date;
+			}
 			kUnit.setTime(TIME);
 			if(KUNIT != null) {
 				if(kUnit.getTime() == KUNIT.getTime()) {
@@ -151,6 +155,10 @@ var dealHalfYKline = function(results, key) {
 					_weekDay = _date.getDay();
 				}
 				TIME = _date.format('yyyyMMdd');
+				var now_date = new Date().format('yyyyMMdd');
+				if(parseFloat(now_date) < parseFloat(TIME)) {
+					TIME = now_date;
+				}
 			} else if(parseFloat(ym) > parseFloat(compareSummerYM) && parseFloat(ym) <= parseFloat(compareWinterYMEnd)) {
 				var _date = new Date(year + '-12-31');
 				var _weekDay = _date.getDay();
@@ -160,6 +168,10 @@ var dealHalfYKline = function(results, key) {
 					_weekDay = _date.getDay();
 				}
 				TIME = _date.format('yyyyMMdd');
+				var now_date = new Date().format('yyyyMMdd');
+				if(parseFloat(now_date) < parseFloat(TIME)) {
+					TIME = now_date;
+				}
 			}
 			kUnit.setTime(TIME);
 			if(KUNIT != null) {
@@ -214,7 +226,12 @@ var dealJiKline = function(results, key) {
 					_date = new Date(_tempDate);
 					_weekDay = _date.getDay();
 				}
+
 				TIME = _date.format('yyyyMMdd'); // 春季
+				var now_date = new Date().format('yyyyMMdd');
+				if(parseFloat(now_date) < parseFloat(TIME)) {
+					TIME = now_date;
+				}
 				// console.log('春'+TIME);
 			} else if(parseFloat(ym) >= parseFloat(compareSummerYM) && parseFloat(ym) < parseFloat(compareAutumYM)) {
 				var _date = new Date(year + '-06-30');
@@ -228,6 +245,10 @@ var dealJiKline = function(results, key) {
 					_weekDay = _date.getDay();
 				}
 				TIME = _date.format('yyyyMMdd'); // 夏季
+				var now_date = new Date().format('yyyyMMdd');
+				if(parseFloat(now_date) < parseFloat(TIME)) {
+					TIME = now_date;
+				}
 				// console.log('夏季'+TIME);
 			} else if(parseFloat(ym) >= parseFloat(compareAutumYM) && parseFloat(ym) < parseFloat(compareWinterYM)) {
 				var _date = new Date(year + '-09-30');
@@ -241,6 +262,10 @@ var dealJiKline = function(results, key) {
 					_weekDay = _date.getDay();
 				}
 				TIME = _date.format('yyyyMMdd'); // 秋季
+				var now_date = new Date().format('yyyyMMdd');
+				if(parseFloat(now_date) < parseFloat(TIME)) {
+					TIME = now_date;
+				}
 				// console.log('秋'+TIME);
 			} else if(parseFloat(ym) >= parseFloat(compareWinterYM) && parseFloat(ym) < parseFloat(compareNextSpringYM)) {
 				// console.log(compareNextSpringYM,ym);
@@ -258,6 +283,10 @@ var dealJiKline = function(results, key) {
 					_weekDay = _date.getDay();
 				}
 				TIME = _date.format('yyyyMMdd'); // 冬季
+				var now_date = new Date().format('yyyyMMdd');
+				if(parseFloat(now_date) < parseFloat(TIME)) {
+					TIME = now_date;
+				}
 				// console.log('冬'+TIME);
 			}
 			// console.log(TIME);
@@ -294,13 +323,19 @@ var dealMonthKline = function(results, key) {
 		var count = 0;
 		async.forEach(results, function(item, cb) {
 			var kUnit = setKLineUnit(item);
-			var ym = item[0].toString().substring(0, 6); // 年月
+			var ymd = item[0].toString().substring(0, 8); // 年月
 			if(count == 0) {
-				START = ym;
+				START = ymd;
 				count = count + 1;
 			}
-			if(START != ym) { // 不在同月内
-				START = ym;
+			if(START != ymd.substring(0,6)) { // 不在同月内
+				START = ymd.substring(0,6);
+			}
+			var now_date = new Date().format('yyyyMMdd');
+			if(parseFloat(now_date) < parseFloat(ymd)) {
+				START = now_date;
+			}else{
+				START = ymd;
 			}
 			kUnit.setTime(START);
 			if(KUNIT != null) {
@@ -354,7 +389,10 @@ var dealWeekKline = function(results, key) {
 			if(parseFloat(6 - weekDay) == 1) {
 				_time = ymd; // 周五
 			}
-
+			var now_date = new Date().format('yyyyMMdd');
+			if(parseFloat(now_date) < parseFloat(_time)) {
+				_time = now_date;
+			}
 			kUnit.setTime(_time);
 			if(KUNIT != null) {
 				if(kUnit.getTime() == KUNIT.getTime()) {
@@ -400,21 +438,138 @@ var Worker = function(type, key) {
 			}
 		};
 	};
-/**
- * 以list存入redis
- */
-var pushData = function(key, str, callback) {
-		// console.log('pid:'+process.pid+','+key);
-		//redis.ltrim(key, -120, -1, function(ee, rr) {
-			//if(!ee) {
-				REDIS.rpush(key, str, function(err, res) {
-					if(err) console.log(err);
-					if(callback) callback();
-				});
-			//}
-		//});
-	};
 
+var KEYS_STR = 'WK|MTH|HY|FY|SY';
+/*
+ *返回true，代表在同一周，否则不在同一周
+ */
+var check_WK = function(time, temp_time) {
+		var date = new Date(time.substring(0, 4) + '-' + time.substring(4, 6) + '-' + time.substring(6, 8));
+		var date_str = date.addDays(5 - date.getDay()).format('yyyyMMdd');
+		var _date = new Date(temp_time.substring(0, 4) + '-' + temp_time.substring(4, 6) + '-' + temp_time.substring(6, 8));
+		var _date_str = _date.addDays(5 - _date.getDay()).format('yyyyMMdd');
+		if(parseFloat(date_str) == parseFloat(_date_str)) {
+			return true;
+		} else {
+			return false;
+		}
+	};
+/*
+ *返回true，代表在同一月，否则不在同一月
+ */
+var check_MTH = function(time, temp_time) {
+		if(parseFloat(time.substring(0, 4)) == parseFloat(temp_time.substring(0, 4))) { //保证在同一年
+			if(parseFloat(time.substring(4, 6)) == parseFloat(temp_time.substring(4, 6))) {
+				return true;
+			} else {
+				return false;
+			}
+		} else {
+			return false;
+		}
+	};
+/*
+ *返回true，代表在同一半年，否则不在同一半年
+ */
+var check_HY = function(time, temp_time) {
+		if(parseFloat(time.substring(0, 4)) == parseFloat(temp_time.substring(0, 4))) { //保证在同一年
+			if((parseFloat(time.substring(4, 6)) <= 6 && parseFloat(temp_time.substring(4, 6)) <= 6) || (parseFloat(time.substring(4, 6)) > 6 && parseFloat(temp_time.substring(4, 6)) > 6 && parseFloat(time.substring(4, 6)) <= 12 && parseFloat(temp_time.substring(4, 6)) <= 12)) {
+				return true;
+			} else {
+				return false;
+			}
+		} else {
+			return false;
+		}
+	};
+/*
+ *返回true，代表在同一年，否则不在同一年
+ */
+var check_FY = function(time, temp_time) {
+		if(parseFloat(time.substring(0, 4)) == parseFloat(temp_time.substring(0, 4))) { //保证在同一年
+			return true;
+		} else {
+			return false;
+		}
+	};
+/*
+ *返回true，代表在同一季，否则不在同一季
+ */
+var check_SY = function(time, temp_time) {
+		if(parseFloat(time.substring(0, 4)) == parseFloat(temp_time.substring(0, 4))) { //保证在同一年
+			var month = parseFloat(time.substring(4, 6));
+			var _month = parseFloat(temp_time.substring(4, 6));
+			return(month <= 3 && _month <= 3) ? true : ((month > 3 && month <= 6 && _month > 3 && _month <= 6) ? true : ((month > 6 && month <= 9 && _month > 6 && _month <= 9) ? true : ((month > 9 && month <= 12 && _month > 9 && _month <= 12) ? true : false)));
+		} else {
+			return false;
+		}
+	};
+var save_to_redis = function(suffix, key, str, callback) {
+		if(KEYS_STR.indexOf(suffix) != -1) {
+			REDIS.lindex(key, -1, function(e, r) {
+				//console.log(key, r);
+				if(e) {
+					console.log(e);
+					callback();
+				} else if(r != null) {
+					var flag = null; //为true则更新，否则新增
+					switch(suffix) {
+					case 'WK':
+						flag = check_WK(r.split('|')[0], str.split('|')[0]);
+						break;
+					case 'MTH':
+						flag = check_MTH(r.split('|')[0], str.split('|')[0]);
+						break;
+					case 'HY':
+						flag = check_HY(r.split('|')[0], str.split('|')[0]);
+						break;
+					case 'FY':
+						flag = check_FY(r.split('|')[0], str.split('|')[0]);
+					case 'SY':
+						flag = check_SY(r.split('|')[0], str.split('|')[0]);
+						break;
+					}
+					if(flag) {
+						REDIS.lset(key, -1, str, function(ee, rr) {
+							if(ee) console.log(ee, key + 'lset');
+							callback();
+						});
+					} else {
+						REDIS.rpush(key, str, function(err, res) {
+							if(err) console.log(err);
+							callback();
+						});
+					}
+				} else { //第一根
+					REDIS.rpush(key, str, function(err, res) {
+						if(err) console.log(err);
+						callback();
+					});
+				}
+			});
+		} else {
+			callback();
+		}
+	}
+	/**
+	 * 以list存入redis
+	 */
+var pushData = function(key, str, callback) {
+		try {
+			var temp = key.split('.');
+			var suffix = temp[temp.length - 1];
+			save_to_redis(suffix, key, str, callback);
+		} catch(ex) {
+			if(ex && ex.stack) console.log(ex.stack);
+			else console.log(ex);
+		}
+	};
+var pushData_day = function(key, str, callback) {
+		REDIS.rpush(key, str, function(err, res) {
+			if(err) console.log(err);
+			if(callback) callback();
+		});
+	};
 var saveKLine = function(results, key, cb) {
 		console.log('pid:' + process.pid + ',' + key);
 		var dayKey = key.split('.');
@@ -436,7 +591,7 @@ var saveKLine = function(results, key, cb) {
 		async.forEach(results, function(item, callback) {
 			var str = item.join('|');
 			process.nextTick(function() {
-				pushData(key, str, callback);
+				pushData_day(key, str, callback);
 			});
 		}, function() {
 			cb();
@@ -505,6 +660,8 @@ var start = function(array) {
 			dealDataMain(array, callback);
 		}], function() {
 			console.log('pid=' + process.pid + ' is over');
-			process.exit(0);
+			setTimeout(function() {
+				process.exit(0);
+			}, 10000);
 		});
 	}
