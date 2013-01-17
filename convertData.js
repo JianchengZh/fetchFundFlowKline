@@ -104,7 +104,7 @@ var dealYearKline = function(results, key) {
 				console.log(e.stack);
 			}
 			var now_date = new Date().format('yyyyMMdd');
-			if(parseFloat(now_date)<parseFloat(TIME)){
+			if(parseFloat(now_date) < parseFloat(TIME)) {
 				TIME = now_date;
 			}
 			kUnit.setTime(TIME);
@@ -328,13 +328,13 @@ var dealMonthKline = function(results, key) {
 				START = ymd;
 				count = count + 1;
 			}
-			if(START != ymd.substring(0,6)) { // 不在同月内
-				START = ymd.substring(0,6);
+			if(START != ymd.substring(0, 6)) { // 不在同月内
+				START = ymd.substring(0, 6);
 			}
 			var now_date = new Date().format('yyyyMMdd');
 			if(parseFloat(now_date) < parseFloat(ymd)) {
 				START = now_date;
-			}else{
+			} else {
 				START = ymd;
 			}
 			kUnit.setTime(START);
@@ -585,9 +585,9 @@ var saveKLine = function(results, key, cb) {
 		yearKey[3] = 'FY';
 		dealWeekKline(results, weekKey.join('.')); // 处理周K线
 		dealMonthKline(results, monthKey.join('.')); // 处理月K线
-		dealJiKline(results, jiKey.join('.')); // 处理季K
-		dealHalfYKline(results, halfYKey.join('.')); // 半年K
-		dealYearKline(results, yearKey.join('.')); // 年K
+		// dealJiKline(results, jiKey.join('.')); // 处理季K
+		// dealHalfYKline(results, halfYKey.join('.')); // 半年K
+		// dealYearKline(results, yearKey.join('.')); // 年K
 		async.forEach(results, function(item, callback) {
 			var str = item.join('|');
 			process.nextTick(function() {
@@ -604,16 +604,20 @@ var dealDataEmpty = function(arrays, ccback) {
 			var t = item.split('/');
 			var key = 'KEMCF.EMPTY.' + json[t[t.length - 1]] + '.DAY';
 			data = data.substring(0, data.length - 1);
-			var _array = JSON.parse(data);
-			_array.forEachSync(function(val, _index, callback) {
-				var ymd = val[2];
-				var emptyIn = parseFloat(val.slice(6, 7)) + parseFloat(val.slice(12, 13)) + parseFloat(val.slice(48, 49));
-				var emptyOut = parseFloat(val.slice(9, 10)) + parseFloat(val.slice(15, 16)) + parseFloat(val.slice(51, 52));
-				arrayData.push([ymd, emptyIn, emptyOut]);
-				callback();
-			}, function() {
-				saveKLine(arrayData, key, cback);
-			});
+			try {
+				var _array = JSON.parse(data);
+				_array.forEachSync(function(val, _index, callback) {
+					var ymd = val[2];
+					var emptyIn = parseFloat(val.slice(6, 7)) + parseFloat(val.slice(12, 13)) + parseFloat(val.slice(48, 49));
+					var emptyOut = parseFloat(val.slice(9, 10)) + parseFloat(val.slice(15, 16)) + parseFloat(val.slice(51, 52));
+					arrayData.push([ymd, emptyIn, emptyOut]);
+					callback();
+				}, function() {
+					saveKLine(arrayData, key, cback);
+				});
+			} catch(ex) {
+				console.log(ex.stack);
+			}
 		}, function() {
 			//console.log('pid=' + process.pid + ' is over');
 			ccback(null, arrays)
@@ -627,16 +631,20 @@ var dealDataMain = function(arrays, ccback) {
 			var t = item.split('/');
 			var key = 'KEMCF.MAIN.' + json[t[t.length - 1]] + '.DAY';
 			data = data.substring(0, data.length - 1);
-			var _array = JSON.parse(data);
-			_array.forEachSync(function(val, _index, callback) {
-				var ymd = val[2];
-				var emptyIn = parseFloat(val.slice(6, 7)) + parseFloat(val.slice(12, 13));
-				var emptyOut = parseFloat(val.slice(9, 10)) + parseFloat(val.slice(15, 16));
-				arrayData.push([ymd, emptyIn, emptyOut]);
-				callback();
-			}, function() {
-				saveKLine(arrayData, key, cback);
-			});
+			try {
+				var _array = JSON.parse(data);
+				_array.forEachSync(function(val, _index, callback) {
+					var ymd = val[2];
+					var emptyIn = parseFloat(val.slice(6, 7)) + parseFloat(val.slice(12, 13));
+					var emptyOut = parseFloat(val.slice(9, 10)) + parseFloat(val.slice(15, 16));
+					arrayData.push([ymd, emptyIn, emptyOut]);
+					callback();
+				}, function() {
+					saveKLine(arrayData, key, cback);
+				});
+			} catch(ex) {
+				console.log(ex.stack);
+			}
 		}, function() {
 			ccback(null, arrays);
 		});
@@ -652,14 +660,18 @@ var dealDataMain = function(arrays, ccback) {
 	});
 
 var start = function(array) {
-		async.waterfall([
-
-		function(callback) {
-			dealDataEmpty(array, callback);
-		}, function(array, callback) {
-			dealDataMain(array, callback);
-		}], function() {
-			console.log('pid=' + process.pid + ' is over');
+		// async.waterfall([
+		// function(callback) {
+		// 	dealDataEmpty(array, callback);
+		// }, function(array, callback) {
+		// 	dealDataMain(array, callback);
+		// }], function() {
+		// 	console.log('pid=' + process.pid + ' is over');
+		// 	setTimeout(function() {
+		// 		process.exit(0);
+		// 	}, 10000);
+		// });
+		dealDataMain(array, function() {
 			setTimeout(function() {
 				process.exit(0);
 			}, 10000);
