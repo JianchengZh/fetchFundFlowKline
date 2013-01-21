@@ -17,7 +17,7 @@ var dealData = function(arrays) {
 			url = random(url);
 			url = url.replace(/<id>/g, item);
 			request(url, function(error, response, body) {
-				if(body != '[]0'){
+				if(body.toString() != '[]0' && body.toString() != '{"ret":"ERROR"}0' && body.toString() != '{"ret":"Err_timeout"}0'){
 					fs.writeFileSync(__dirname + '/data/' + item + '', body);
 					console.log('process.pid=' + process.pid + ',' + item);
 				}				
